@@ -1,0 +1,182 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply font-sans text-navy-900 antialiased;
+  }
+
+  @media (pointer: fine) {
+    body,
+    a,
+    button,
+    [role="button"],
+    input,
+    textarea,
+    select,
+    label,
+    [data-cursor-hover] {
+      cursor: none;
+    }
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display tracking-tight;
+  }
+
+  ::selection {
+    @apply bg-blue-200 text-navy-900;
+  }
+}
+
+@layer components {
+  .btn-focus {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2;
+  }
+
+  .input-focus {
+    @apply focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-shadow duration-200;
+  }
+
+  .nav-underline {
+    @apply relative;
+  }
+
+  .nav-underline::after {
+    content: '';
+    @apply absolute left-1/2 -translate-x-1/2 bottom-1 h-0.5 w-0 bg-blue-500 rounded-full transition-all duration-200;
+  }
+
+  .nav-underline:hover::after,
+  .nav-underline.active::after {
+    @apply w-4;
+  }
+
+  .glass {
+    @apply bg-white/80 backdrop-blur-xl border border-slate-200/60;
+  }
+
+  .card-shadow {
+    box-shadow: 0 1px 2px rgba(13, 29, 58, 0.04), 0 4px 12px rgba(13, 29, 58, 0.06);
+  }
+
+  .card-shadow-lg {
+    box-shadow: 0 4px 8px rgba(13, 29, 58, 0.06), 0 12px 32px rgba(13, 29, 58, 0.1);
+  }
+
+  .skeleton {
+    @apply relative overflow-hidden bg-slate-200/70 rounded-md;
+  }
+
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+    background-size: 1000px 100%;
+    animation: shimmer 2s linear infinite;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(203 213 225) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-slate-300 rounded-full;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+}
+
+/* Leaflet overrides */
+.leaflet-container {
+  font-family: 'Inter', system-ui, sans-serif;
+  z-index: 0;
+}
+
+.leaflet-tile {
+  filter: saturate(0.85) brightness(1.02);
+}
+
+.leaflet-popup-content-wrapper {
+  @apply rounded-xl shadow-lg border border-slate-200;
+  overflow: hidden;
+}
+
+.leaflet-popup-content {
+  margin: 0;
+  padding: 0;
+}
+
+.leaflet-popup-tip {
+  @apply border-l border-r border-b-0 border-t-0 border-slate-200;
+}
+
+/* Custom marker pulse */
+.urbaneye-marker {
+  position: relative;
+}
+
+.urbaneye-marker-pulse {
+  animation: markerPulse 2s ease-out infinite;
+}
+
+@keyframes markerPulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+@keyframes ripple {
+  0% {
+    width: 0;
+    height: 0;
+    opacity: 0.45;
+  }
+  100% {
+    width: 300px;
+    height: 300px;
+    opacity: 0;
+  }
+}
+
+.animate-ripple {
+  animation: ripple 0.5s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,84 @@
+# =========================
+# ENV / SECRETS
+# =========================
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# =========================
+# PYTHON
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# =========================
+# NODE / FRONTEND
+# =========================
+node_modules/
+dist/
+build/
+*.local
+
+# =========================
+# DATABASE
+# =========================
+*.db
+*.sqlite
+*.sqlite3
+
+# =========================
+# UPLOADS / MEDIA
+# =========================
+storage/uploads/*
+!storage/uploads/.gitkeep
+
+# =========================
+# AI MODELS
+# Keep ONNX models for Render deployment; ignore large PyTorch weights.
+# =========================
+*.pt
+*.pth
+
+# =========================
+# LOGS
+# =========================
+*.log
+logs/
+
+# =========================
+# IDE
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# =========================
+# OS
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# TEMPORARY / SCRATCH
+# =========================
+.tmp/
+tmp/
+backend/output/ 

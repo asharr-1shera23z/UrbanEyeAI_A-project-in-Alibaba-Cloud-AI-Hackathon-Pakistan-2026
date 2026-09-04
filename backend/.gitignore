@@ -1,0 +1,11 @@
+# These rules are also covered by the root .gitignore; kept here for local clarity.
+venv/
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+.env.*
+!.env.example
+urbaneye.db
+storage/uploads/*
+!storage/uploads/.gitkeep
