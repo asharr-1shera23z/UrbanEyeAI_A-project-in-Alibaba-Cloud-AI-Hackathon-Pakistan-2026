@@ -126,7 +126,7 @@ export function HomePage() {
 
               <h1 className="text-4xl sm:text-5xl lg:text-5xl font-extrabold text-navy-900 leading-[1.05] tracking-tight">
                 <span className="block">Report Issues.</span>
-                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-800 via-cyan-500 to-blue-500">
+                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-950 via-blue-900 to-blue-700">
                   AI Prioritizes. City Acts.
                 </span>
               </h1>
