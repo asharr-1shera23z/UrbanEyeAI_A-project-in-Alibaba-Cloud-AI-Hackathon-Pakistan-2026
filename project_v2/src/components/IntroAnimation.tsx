@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
-import { LogoMark } from './Logo';
+import { LogoFull } from './Logo';
 
 interface IntroAnimationProps {
   onComplete: () => void;
@@ -70,28 +70,19 @@ export function IntroAnimation({ onComplete }: IntroAnimationProps) {
       <div className="absolute bottom-0 left-0 w-72 h-72 bg-blue-200/30 rounded-full blur-3xl pointer-events-none" />
 
       {/* Content */}
-      <div className="relative flex flex-col items-center gap-6 px-6">
+      <div className="relative flex flex-col items-center gap-5 px-6">
         <motion.div
           initial={{ opacity: 0, scale: 0.7 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, ease: 'easeOut' }}
         >
-          <LogoMark size={96} />
+          <LogoFull size={72} />
         </motion.div>
-
-        <motion.h1
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4, ease: 'easeOut' }}
-          className="text-3xl sm:text-4xl font-extrabold tracking-tight text-navy-900 text-center"
-        >
-          UrbanEye<span className="text-blue-600"> AI</span>
-        </motion.h1>
 
         <motion.p
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.7, ease: 'easeOut' }}
+          transition={{ duration: 0.5, delay: 0.5, ease: 'easeOut' }}
           className="text-base sm:text-lg text-slate-500 font-medium text-center"
         >
           See the problem. Understand it. Fix it.
@@ -100,7 +91,7 @@ export function IntroAnimation({ onComplete }: IntroAnimationProps) {
         <motion.div
           initial={{ scaleX: 0 }}
           animate={{ scaleX: 1 }}
-          transition={{ duration: 0.8, delay: 0.9, ease: 'easeOut' }}
+          transition={{ duration: 0.8, delay: 0.8, ease: 'easeOut' }}
           className="h-0.5 w-32 bg-blue-600 origin-center rounded-full"
         />
       </div>

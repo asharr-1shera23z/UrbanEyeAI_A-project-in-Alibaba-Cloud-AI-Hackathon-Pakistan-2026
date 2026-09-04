@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { IntroAnimation } from '@/components/IntroAnimation';
 import { AIBackground } from '@/components/AIBackground';
-import { CustomCursor } from '@/components/CustomCursor';
 import { ToastProvider } from '@/components/ui/Toast';
 import { AuthProvider } from '@/context/AuthContext';
 import { LanguageProvider } from '@/i18n/LanguageContext';
@@ -35,7 +34,6 @@ function App() {
       <LanguageProvider>
       <ToastProvider>
         <AIBackground />
-        <CustomCursor />
         {!introDone && (
           <IntroAnimation
             onComplete={() => {
