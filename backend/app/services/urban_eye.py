@@ -3,6 +3,7 @@ Urban Eye AI - 3-class ensemble: Pothole, Crack, Garbage.
 Loads ONNX models and runs them sequentially on CPU.
 """
 import json
+import math
 import cv2
 import numpy as np
 from pathlib import Path
@@ -25,14 +26,22 @@ class UrbanEyeAI:
         "garbage": 2,
     }
 
-    # Tune these after testing on your images
+    # Conservative gates for the single-class specialists. Pothole is very
+    # reliable, so we keep it high; crack/garbage need lower gates to catch
+    # real positives, and the ensemble scoring removes the false ones.
     CONF_THRESHOLDS = {
-        "pothole": 0.50,    # balanced: catches clear potholes, skips weak noise
-        "crack": 0.25,      # lowered because cazzz307 outputs lower confidences
-        "garbage": 0.20,    # lowered because esapzoi scores dumps weakly
+        # Lowered from 0.55 so boundary/cropped potholes still make it through.
+        "pothole": 0.50,
+        "crack": 0.25,
+        "garbage": 0.20,
     }
 
-    # Max detections per issue type per image (keeps output clean)
+    # Area cap for scoring / NMS: beyond 10% of the image the box is probably
+    # background or a false full-frame detection, so extra area stops helping.
+    NMS_AREA_CAP = 0.10
+
+    # Max detections per issue type per image (keeps output clean while giving
+    # the ensemble arbitration enough candidates to score).
     MAX_DETECTIONS_PER_CLASS = {
         "pothole": 5,
         "road_crack": 5,
@@ -102,21 +111,31 @@ class UrbanEyeAI:
                     conf = float(box.conf[0])
 
                     output_class = self.CLASS_MAP[cls]
+                    area_ratio = ((x2 - x1) * (y2 - y1)) / img_area
+                    capped_ratio = min(area_ratio, self.NMS_AREA_CAP)
+                    nms_score = conf * math.sqrt(max(capped_ratio, 1e-6))
+
                     all_detections.append({
                         "issue_type": output_class,
                         "class_id": self.CLASS_IDS[output_class],
                         "confidence": round(conf, 4),
+                        "area_ratio": round(area_ratio, 6),
+                        "nms_score": round(nms_score, 6),
                         "bounding_box": {
                             "x1": int(x1), "y1": int(y1),
                             "x2": int(x2), "y2": int(y2),
                         },
                     })
 
-        # Merge overlapping boxes: highest confidence wins
-        merged = self._nms(all_detections, iou_threshold=0.5)
+        # Merge overlapping boxes within each specialist class first, so a strong
+        # false positive from one model cannot delete a true detection from another.
+        merged = self._nms(all_detections, iou_threshold=0.45)
 
         # Keep only top-N detections per class to reduce noise
         merged = self._apply_top_n_per_class(merged)
+
+        # If two different classes still overlap heavily, drop the weaker one
+        merged = self._suppress_cross_class(merged, iou_threshold=0.5)
 
         # Severity from your scope doc
         for det in merged:
@@ -148,7 +167,7 @@ class UrbanEyeAI:
                 "severity_counts": {"low": 0, "medium": 0, "high": 0},
             }
 
-        primary = max(detections, key=lambda d: d["confidence"])
+        primary = max(detections, key=lambda d: d["nms_score"])
         severity_counts = {"low": 0, "medium": 0, "high": 0}
         for det in detections:
             severity_counts[det["severity"]] += 1
@@ -188,28 +207,35 @@ class UrbanEyeAI:
         return str(out_path)
 
     @staticmethod
-    def _nms(detections: List[Dict], iou_threshold: float = 0.5) -> List[Dict]:
+    def _nms(detections: List[Dict], iou_threshold: float = 0.45) -> List[Dict]:
+        """Per-class NMS so a high-confidence false positive from one specialist
+        cannot erase a true detection from another specialist before scoring."""
         if not detections:
             return []
 
-        boxes = np.array([
-            [d["bounding_box"]["x1"], d["bounding_box"]["y1"],
-             d["bounding_box"]["x2"], d["bounding_box"]["y2"]]
-            for d in detections
-        ], dtype=float)
-        scores = np.array([d["confidence"] for d in detections], dtype=float)
+        grouped: Dict[str, List[Dict]] = {}
+        for det in detections:
+            grouped.setdefault(det["issue_type"], []).append(det)
 
-        indices = cv2.dnn.NMSBoxes(
-            boxes.tolist(),
-            scores.tolist(),
-            score_threshold=0.0,
-            nms_threshold=iou_threshold,
-        )
+        kept: List[Dict] = []
+        for dets in grouped.values():
+            boxes = np.array([
+                [d["bounding_box"]["x1"], d["bounding_box"]["y1"],
+                 d["bounding_box"]["x2"], d["bounding_box"]["y2"]]
+                for d in dets
+            ], dtype=float)
+            scores = np.array([d["nms_score"] for d in dets], dtype=float)
 
-        if len(indices) == 0:
-            return []
+            indices = cv2.dnn.NMSBoxes(
+                boxes.tolist(),
+                scores.tolist(),
+                score_threshold=0.0,
+                nms_threshold=iou_threshold,
+            )
+            if len(indices):
+                kept.extend(dets[int(i)] for i in indices.flatten())
 
-        return [detections[int(i)] for i in indices.flatten()]
+        return kept
 
     @staticmethod
     def _apply_top_n_per_class(
@@ -231,10 +257,45 @@ class UrbanEyeAI:
             if limit is None:
                 filtered.extend(dets)
                 continue
-            dets_sorted = sorted(dets, key=lambda d: d["confidence"], reverse=True)
+            dets_sorted = sorted(dets, key=lambda d: d["nms_score"], reverse=True)
             filtered.extend(dets_sorted[:limit])
 
         return filtered
+
+    @staticmethod
+    def _iou(a: Dict, b: Dict) -> float:
+        x1 = max(a["x1"], b["x1"])
+        y1 = max(a["y1"], b["y1"])
+        x2 = min(a["x2"], b["x2"])
+        y2 = min(a["y2"], b["y2"])
+        inter = max(0, x2 - x1) * max(0, y2 - y1)
+        area_a = (a["x2"] - a["x1"]) * (a["y2"] - a["y1"])
+        area_b = (b["x2"] - b["x1"]) * (b["y2"] - b["y1"])
+        union = area_a + area_b - inter
+        return inter / union if union > 0 else 0.0
+
+    @staticmethod
+    def _suppress_cross_class(
+        detections: List[Dict], iou_threshold: float = 0.5
+    ) -> List[Dict]:
+        """When two different-class boxes overlap heavily, keep only the more
+        confident one. This removes the most common cross-model mistakes (e.g.
+        garbage model firing on a crack, or crack model firing on garbage)."""
+        if not detections:
+            return []
+
+        sorted_dets = sorted(detections, key=lambda d: d["nms_score"], reverse=True)
+        kept: List[Dict] = []
+        for det in sorted_dets:
+            bb = det["bounding_box"]
+            if any(
+                det["issue_type"] != k["issue_type"]
+                and UrbanEyeAI._iou(bb, k["bounding_box"]) > iou_threshold
+                for k in kept
+            ):
+                continue
+            kept.append(det)
+        return kept
 
 
 if __name__ == "__main__":
