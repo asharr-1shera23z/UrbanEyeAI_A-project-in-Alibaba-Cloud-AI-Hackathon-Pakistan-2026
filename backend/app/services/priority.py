@@ -1,16 +1,15 @@
 """
 Priority scoring + duplicate/near-duplicate detection.
 
-Priority combines:
+Severity combines:
   1. AI confidence for the detected class
   2. Defect size (bounding-box area, as a proxy for how large/severe the
      physical defect is)
-  3. "Location importance" — a lightweight heuristic keyword match against
-     the reported location string (main roads / markets / hospitals etc.
-     are weighted higher; this is a stand-in for a real GIS road-class or
-     points-of-interest layer)
-  4. Nearby recent reports of the same category (a cluster of independent
-     reports for the same issue is itself a signal of real-world severity)
+  3. Class-aware rules so dangerous road damage is not downgraded
+Priority directly mirrors severity:
+  CRITICAL/HIGH severity → HIGH priority
+  MEDIUM severity → MEDIUM priority
+  LOW severity → LOW priority
 """
 import math
 from dataclasses import dataclass
@@ -134,11 +133,6 @@ def compute_severity_and_priority(
         else:
             severity = "LOW"
 
-    if score >= 70:
-        priority = "HIGH"
-    elif score >= 45:
-        priority = "MEDIUM"
-    else:
-        priority = "LOW"
+    priority = "HIGH" if severity in ("CRITICAL", "HIGH") else severity
 
     return ScoredPriority(severity=severity, priority=priority, score=round(score, 1))
